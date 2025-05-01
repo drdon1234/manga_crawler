@@ -2,10 +2,12 @@ import asyncio
 from cola_crawler import ColaCrawler
 from copy_crawler import CopyCrawler
 
-PROXIES = {
+PROXIES = None
+
+"""PROXIES = {
     "http":"http://127.0.0.1:7897",
     "https":"http://127.0.0.1:7897"
-}
+}"""
 
 async def main():
     print("漫画爬虫下载工具")
