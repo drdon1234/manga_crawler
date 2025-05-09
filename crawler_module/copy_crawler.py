@@ -9,10 +9,17 @@ from .base_crawler import BaseCrawler
 
 
 class CopyCrawler(BaseCrawler):
-    """Copy漫画爬虫完整实现"""
-
     def __init__(self, proxies=None, headers=None, max_concurrency=10):
-        """初始化爬虫实例"""
+        """初始化Copy漫画爬虫实例
+        
+        Args:
+            proxies: 代理设置，默认为None
+            headers: 请求头设置，默认为None
+            max_concurrency: 最大并发数，默认为10
+        
+        Returns:
+            None
+        """
         headers = headers or {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0",
             "Accept": "*/*",
@@ -23,7 +30,15 @@ class CopyCrawler(BaseCrawler):
         super().__init__(proxies, headers, max_concurrency)
 
     async def search_manga(self, keyword, page=1):
-        """执行漫画搜索"""
+        """执行漫画搜索并缓存结果
+        
+        Args:
+            keyword: 搜索关键词
+            page: 页数，默认为1
+        
+        Returns:
+            str: 格式化的搜索结果
+        """
         self.clear_cache("search")  # 新版本缓存管理方式
         limit = 12
 
@@ -41,7 +56,14 @@ class CopyCrawler(BaseCrawler):
             return f"搜索异常: {e}"
 
     def _format_search(self, data):
-        """格式化搜索结果"""
+        """格式化搜索结果为可读字符串
+        
+        Args:
+            data: 搜索结果数据
+        
+        Returns:
+            str: 格式化后的搜索结果字符串
+        """
         if not data.get("results", {}).get("list"):
             return "无结果"
 
@@ -58,7 +80,14 @@ class CopyCrawler(BaseCrawler):
         return "\n".join(output)
 
     async def get_manga_chapters(self, identifier):
-        """获取章节列表"""
+        """获取漫画章节列表并缓存
+        
+        Args:
+            identifier: 索引或URL/path_word
+        
+        Returns:
+            str: 格式化的章节列表
+        """
         self.clear_cache("chapters")  # 新版本缓存管理方式
 
         manga_info = await self._get_manga_metadata(identifier)
@@ -79,7 +108,14 @@ class CopyCrawler(BaseCrawler):
             return f"获取异常: {e}"
 
     async def _get_manga_metadata(self, identifier):
-        """获取漫画元数据"""
+        """获取漫画元数据信息
+        
+        Args:
+            identifier: 索引或URL/path_word
+        
+        Returns:
+            dict: 包含path_word和name的字典，或包含error的字典
+        """
         if identifier.isdigit():
             cache = self.load_from_cache("search")  # 新版本缓存管理方式
             if not cache:
@@ -101,7 +137,15 @@ class CopyCrawler(BaseCrawler):
             }
 
     def _format_chapters(self, chapters, name):
-        """格式化章节列表"""
+        """格式化章节列表为可读字符串
+        
+        Args:
+            chapters: 章节数据列表
+            name: 漫画名称
+        
+        Returns:
+            str: 格式化后的章节列表字符串
+        """
         if not chapters:
             return f"{name} 无章节"
 
@@ -111,7 +155,15 @@ class CopyCrawler(BaseCrawler):
         return "\n".join(output)
 
     async def download_manga(self, chapter_spec, identifier):
-        """下载漫画主入口"""
+        """下载漫画章节，合并为PDF并删除图片
+        
+        Args:
+            chapter_spec: 章节规格 (x 或 x-y 或 all)
+            identifier: 索引或URL/path_word
+        
+        Returns:
+            str: 下载结果
+        """
         manga_info = await self._get_manga_metadata(identifier)
         if "error" in manga_info:
             return manga_info["error"]
@@ -137,7 +189,14 @@ class CopyCrawler(BaseCrawler):
         return f"\n{manga_info['name']} 下载结果:\n" + "\n".join(results)
 
     async def _fetch_chapters(self, path_word):
-        """获取章节数据"""
+        """获取漫画章节数据
+        
+        Args:
+            path_word: 漫画路径标识
+        
+        Returns:
+            list: 章节数据列表，或str错误信息
+        """
         cached = self.load_from_cache("chapters")  # 新版本缓存管理方式
         if cached:
             return cached["results"]["list"]
@@ -156,7 +215,15 @@ class CopyCrawler(BaseCrawler):
             return f"获取异常: {e}"
 
     def _parse_chapter_spec(self, spec, chapters):
-        """解析章节规格"""
+        """解析章节规格参数
+        
+        Args:
+            spec: 章节规格 (x 或 x-y 或 all)
+            chapters: 章节数据列表
+        
+        Returns:
+            dict: 包含选定章节的字典或包含错误信息的字典
+        """
         if spec.lower() == "all":
             return {"chapters": chapters}
 
@@ -178,7 +245,17 @@ class CopyCrawler(BaseCrawler):
             return {"error": "格式错误 应为数字"}
 
     async def _download_chapter(self, manga_name, chapter_name, path_word, uuid):
-        """下载单个章节"""
+        """下载单个章节的所有图片并生成PDF
+        
+        Args:
+            manga_name: 漫画名称
+            chapter_name: 章节名称
+            path_word: 漫画路径标识
+            uuid: 章节UUID
+        
+        Returns:
+            str: 下载结果信息
+        """
         dir_path = self._create_chapter_dir(manga_name, chapter_name)
         pdf_path = os.path.join(dir_path, f"{chapter_name}.pdf")
 
@@ -194,7 +271,15 @@ class CopyCrawler(BaseCrawler):
         return f"成功 {success}/{len(image_urls)}"
 
     def _create_chapter_dir(self, manga_name, chapter_name):
-        """创建存储目录"""
+        """创建章节存储目录
+        
+        Args:
+            manga_name: 漫画名称
+            chapter_name: 章节名称
+        
+        Returns:
+            str: 创建的目录路径
+        """
         safe_manga = re.sub(r'[^\w\s.-]', '', manga_name).strip()
         safe_chapter = re.sub(r'[^\w\s.-]', '', chapter_name).strip()
         dir_path = os.path.join(self.MANGA_DIR, safe_manga, safe_chapter)
@@ -202,7 +287,15 @@ class CopyCrawler(BaseCrawler):
         return dir_path
 
     async def _get_image_urls(self, path_word, uuid):
-        """获取图片URL列表"""
+        """获取章节中所有图片的URL列表
+        
+        Args:
+            path_word: 漫画路径标识
+            uuid: 章节UUID
+        
+        Returns:
+            list: 图片URL列表，或str错误信息
+        """
         try:
             async with AsyncSession(proxies=self.PROXIES, headers=self.HEADERS, verify=False) as session:
                 url = f"https://www.copy-manga.com/api/v3/comic/{path_word}/chapter/{uuid}?platform=1"
@@ -216,19 +309,39 @@ class CopyCrawler(BaseCrawler):
             return f"获取异常: {e}"
 
     async def _download_images(self, urls, dir_path, path_word, uuid):
-        """并发下载图片"""
+        """并发下载多张图片
+        
+        Args:
+            urls: 图片URL列表
+            dir_path: 保存目录路径
+            path_word: 漫画路径标识
+            uuid: 章节UUID
+        
+        Returns:
+            int: 成功下载的图片数量
+        """
         tasks = []
         for idx, url in enumerate(urls):
             filepath = os.path.join(dir_path, f"{idx + 1:04d}.jpg")
             if os.path.exists(filepath):
                 continue
             tasks.append(self._download_image(url, filepath, path_word, uuid))
-
         results = await asyncio.gather(*tasks)
         return sum(results)
 
     async def _download_image(self, url, filepath, path_word, uuid, max_retries=3):
-        """下载单张图片"""
+        """下载单张图片文件
+        
+        Args:
+            url: 图片URL
+            filepath: 保存路径
+            path_word: 漫画路径标识
+            uuid: 章节UUID
+            max_retries: 最大重试次数，默认为3
+        
+        Returns:
+            bool: 下载是否成功
+        """
         referer = f"https://www.copy-manga.com/comic/{path_word}/chapter/{uuid}"
         headers = self.HEADERS.copy()
         headers["Referer"] = referer
@@ -248,7 +361,15 @@ class CopyCrawler(BaseCrawler):
         return False
 
     def _save_image(self, content, path):
-        """保存图片文件"""
+        """将图片内容保存为JPEG文件
+        
+        Args:
+            content: 图片二进制内容
+            path: 保存路径
+        
+        Returns:
+            None
+        """
         temp_path = path + ".tmp"
         with open(temp_path, "wb") as f:
             f.write(content)
@@ -260,7 +381,15 @@ class CopyCrawler(BaseCrawler):
             os.remove(temp_path)
 
     def _generate_pdf(self, dir_path, pdf_path):
-        """生成PDF文件"""
+        """将目录下的图片合并为PDF并删除原图
+        
+        Args:
+            dir_path: 图片所在目录
+            pdf_path: PDF保存路径
+        
+        Returns:
+            None
+        """
         images = sorted([
             os.path.join(dir_path, f)
             for f in os.listdir(dir_path)
