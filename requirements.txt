@@ -1,7 +1,0 @@
-curl_cffi~=0.10.0
-bs4~=0.0.2
-Pillow~=11.2.1
-img2pdf~=0.6.1
-pyppeteer~=2.0.0
-pyaes~=1.6.1
-beautifulsoup4~=4.13.4
