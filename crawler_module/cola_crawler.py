@@ -16,8 +16,6 @@ from .base_crawler import BaseCrawler
 
 
 class ColaCrawler(BaseCrawler):
-    """Cola漫画爬虫优化版"""
-
     def __init__(self, proxies=None, headers=None, max_concurrency=10):
         """初始化Cola漫画爬虫
         
