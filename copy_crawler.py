@@ -23,23 +23,15 @@ class CopyCrawler(BaseCrawler):
         super().__init__(proxies, headers, max_concurrency)
 
     async def search_manga(self, keyword, page=1):
-        """执行漫画搜索"""
+        self.clear_cache("search")
         limit = 12
-        cache_key = f"{keyword}_page{page}_limit{limit}"
-        cached = self.load_from_cache("search", cache_key)
-
-        if cached:
-            print(f"加载缓存: {keyword} 第{page}页")
-            return self._format_search(cached)
-
         try:
             async with AsyncSession(proxies=self.PROXIES, headers=self.HEADERS, verify=False) as session:
                 url = f"https://www.copy-manga.com/api/kb/web/searchbd/comics?offset={(page - 1) * limit}&platform=2&limit={limit}&q={keyword}"
                 response = await session.get(url)
-
                 if response.status_code == 200:
                     data = json.loads(response.text)
-                    self.save_to_cache("search", cache_key, data)
+                    self.save_to_cache("search", data)
                     return self._format_search(data)
                 return f"搜索失败 状态码: {response.status_code}"
         except Exception as e:
@@ -62,34 +54,44 @@ class CopyCrawler(BaseCrawler):
             output.append("")
         return "\n".join(output)
 
-    async def get_manga_chapters(self, identifier):
-        """获取章节列表"""
-        manga_info = await self._get_manga_metadata(identifier)
-        if "error" in manga_info:
-            return manga_info["error"]
-
-        cached = self.load_from_cache("chapters", manga_info["path_word"])
+    async def get_manga_chapters(self, index_or_path):
+        self.clear_cache("chapters")
+        manga_path_word = ""
+        manga_name = ""
+        if str(index_or_path).isdigit():
+            search_results = self.load_from_cache("search")
+            if not search_results or "results" not in search_results:
+                return "无搜索缓存，请先搜索漫画"
+            idx = int(index_or_path) - 1
+            manga_list = search_results["results"]["list"]
+            if idx < 0 or idx >= len(manga_list):
+                return f"无效的索引: {index_or_path}"
+            manga = manga_list[idx]
+            manga_path_word = manga["path_word"]
+            manga_name = manga["name"]
+        else:
+            manga_path_word = index_or_path
+            manga_name = "未知漫画"
+        cached = self.load_from_cache("chapters")
         if cached:
-            print(f"加载缓存章节: {manga_info['name']}")
-            return self._format_chapters(cached["results"]["list"], manga_info["name"])
-
+            return self._format_chapter_list(manga_name, cached)
+        manga_url = f"https://www.copy-manga.com/comic/{manga_path_word}"
         try:
             async with AsyncSession(proxies=self.PROXIES, headers=self.HEADERS, verify=False) as session:
-                url = f"https://www.copy-manga.com/api/v3/comic/{manga_info['path_word']}/group/default/chapters?limit=500"
-                response = await session.get(url)
-
+                response = await session.get(manga_url)
                 if response.status_code == 200:
-                    data = json.loads(response.text)
-                    self.save_to_cache("chapters", manga_info["path_word"], data)
-                    return self._format_chapters(data["results"]["list"], manga_info["name"])
-                return f"获取失败 状态码: {response.status_code}"
+                    chapters = self.parse_chapters(response.text)
+                    self.save_to_cache("chapters", chapters)
+                    return self._format_chapter_list(manga_name, chapters)
+                else:
+                    return f"获取章节列表失败，状态码: {response.status_code}"
         except Exception as e:
-            return f"获取异常: {e}"
+            return f"获取章节列表失败: {e}"
 
     async def _get_manga_metadata(self, identifier):
         """获取漫画元数据"""
         if identifier.isdigit():
-            cache = self.get_latest_cache("search")
+            cache = self.load_from_cache("search")
             if not cache:
                 return {"error": "请先执行搜索"}
 
@@ -119,7 +121,6 @@ class CopyCrawler(BaseCrawler):
         return "\n".join(output)
 
     async def download_manga(self, chapter_spec, identifier):
-        """下载漫画主入口"""
         manga_info = await self._get_manga_metadata(identifier)
         if "error" in manga_info:
             return manga_info["error"]
@@ -146,18 +147,16 @@ class CopyCrawler(BaseCrawler):
 
     async def _fetch_chapters(self, path_word):
         """获取章节数据"""
-        cached = self.load_from_cache("chapters", path_word)
+        cached = self.load_from_cache("chapters")
         if cached:
             return cached["results"]["list"]
-
         try:
             async with AsyncSession(proxies=self.PROXIES, headers=self.HEADERS, verify=False) as session:
                 url = f"https://www.copy-manga.com/api/v3/comic/{path_word}/group/default/chapters?limit=500"
                 response = await session.get(url)
-
                 if response.status_code == 200:
                     data = json.loads(response.text)
-                    self.save_to_cache("chapters", path_word, data)
+                    self.save_to_cache("chapters", data)
                     return data["results"]["list"]
                 return f"获取失败 状态码: {response.status_code}"
         except Exception as e:
