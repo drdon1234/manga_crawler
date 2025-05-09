@@ -69,30 +69,37 @@ class BaseCrawler(ABC):
         """
         pass
 
-    def save_to_cache(self, cache_type, identifier, data):
-        """保存数据到缓存（已隔离目录）"""
-        filename = f"{cache_type}_{identifier}.json"
-        filepath = os.path.join(self.CACHE_DIR, filename)
-        with open(filepath, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
+    def format_chapter_list(self, manga_name, chapters):
+        """统一格式化章节列表的输出"""
+        if not chapters:
+            return f"{manga_name}: 无可用章节"
 
-    def load_from_cache(self, cache_type, identifier):
-        """从缓存加载数据（已隔离目录）"""
-        filename = f"{cache_type}_{identifier}.json"
-        filepath = os.path.join(self.CACHE_DIR, filename)
-        if os.path.exists(filepath):
-            with open(filepath, "r", encoding="utf-8") as f:
+        chapter_list = "\n".join(
+            [f"{idx + 1}. {chap['name']} ({chap['url']})"
+             for idx, chap in enumerate(chapters)]
+        )
+        return f"**{manga_name}** 章节列表:\n{chapter_list}"
+
+    def clear_cache(self, cache_type):
+        """删除指定类型的所有缓存文件"""
+        for fname in os.listdir(self.CACHE_DIR):
+            if fname.startswith(f"{cache_type}_") and fname.endswith(".json"):
+                try:
+                    os.remove(os.path.join(self.CACHE_DIR, fname))
+                except Exception as e:
+                    print(f"删除缓存文件 {fname} 失败: {e}")
+
+    def load_from_cache(self, cache_type):
+        """直接加载指定类型的唯一缓存文件"""
+        cache_file = os.path.join(self.CACHE_DIR, f"{cache_type}_latest.json")
+        if os.path.exists(cache_file):
+            with open(cache_file, "r", encoding="utf-8") as f:
                 return json.load(f)
         return None
 
-    def get_latest_cache(self, cache_type):
-        """获取最新的缓存文件（已隔离目录）"""
-        cache_files = [f for f in os.listdir(self.CACHE_DIR)
-                       if f.endswith('.json') and f.startswith(f"{cache_type}_")]
-        if not cache_files:
-            return None, None
-        latest_cache = sorted(cache_files,
-                              key=lambda x: os.path.getmtime(os.path.join(self.CACHE_DIR, x)))[-1]
-        filepath = os.path.join(self.CACHE_DIR, latest_cache)
-        with open(filepath, "r", encoding="utf-8") as f:
-            return filepath, json.load(f)
+    def save_to_cache(self, cache_type, data):
+        """保存数据到指定类型的唯一缓存文件"""
+        os.makedirs(self.CACHE_DIR, exist_ok=True)
+        cache_file = os.path.join(self.CACHE_DIR, f"{cache_type}_latest.json")
+        with open(cache_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
