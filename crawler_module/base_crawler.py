@@ -19,8 +19,8 @@ class BaseCrawler(ABC):
             None
         """
         crawler_id = self.__class__.__name__.lower().replace("crawler", "")
-        self.MANGA_DIR = os.path.join("../manga", crawler_id)
-        self.CACHE_DIR = os.path.join("../cache", crawler_id)
+        self.MANGA_DIR = os.path.join("./manga", crawler_id)
+        self.CACHE_DIR = os.path.join("./cache", crawler_id)
         os.makedirs(self.MANGA_DIR, exist_ok=True)
         os.makedirs(self.CACHE_DIR, exist_ok=True)
         self.PROXIES = proxies or {"http": "http://127.0.0.1:7897", "https": "http://127.0.0.1:7897"}
