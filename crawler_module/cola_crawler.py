@@ -12,7 +12,7 @@ import pyaes
 
 os.environ['PYPPETEER_CHROMIUM_REVISION'] = '1263111'
 from pyppeteer import launch
-from base_crawler import BaseCrawler
+from .base_crawler import BaseCrawler
 
 
 class ColaCrawler(BaseCrawler):
