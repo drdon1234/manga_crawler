@@ -5,7 +5,7 @@ import asyncio
 from curl_cffi.requests import AsyncSession
 from PIL import Image
 import img2pdf
-from base_crawler import BaseCrawler
+from .base_crawler import BaseCrawler
 
 
 class CopyCrawler(BaseCrawler):
