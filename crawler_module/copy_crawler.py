@@ -24,7 +24,7 @@ class CopyCrawler(BaseCrawler):
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0",
             "Accept": "*/*",
             "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-            "Referer": "https://www.copy-manga.com/",
+            "Referer": "https://www.mangacopy.com/",
             "Connection": "keep-alive"
         }
         super().__init__(proxies, headers, max_concurrency)
@@ -44,7 +44,7 @@ class CopyCrawler(BaseCrawler):
 
         try:
             async with AsyncSession(proxies=self.PROXIES, headers=self.HEADERS, verify=False) as session:
-                url = f"https://www.copy-manga.com/api/kb/web/searchbd/comics?offset={(page - 1) * limit}&platform=2&limit={limit}&q={keyword}"
+                url = f"https://www.mangacopy.com/api/kb/web/searchbd/comics?offset={(page - 1) * limit}&platform=2&limit={limit}&q={keyword}"
                 response = await session.get(url)
 
                 if response.status_code == 200:
@@ -96,7 +96,7 @@ class CopyCrawler(BaseCrawler):
 
         try:
             async with AsyncSession(proxies=self.PROXIES, headers=self.HEADERS, verify=False) as session:
-                url = f"https://www.copy-manga.com/api/v3/comic/{manga_info['path_word']}/group/default/chapters?limit=500"
+                url = f"https://www.mangacopy.com/api/v3/comic/{manga_info['path_word']}/group/default/chapters?limit=500"
                 response = await session.get(url)
 
                 if response.status_code == 200:
@@ -203,7 +203,7 @@ class CopyCrawler(BaseCrawler):
 
         try:
             async with AsyncSession(proxies=self.PROXIES, headers=self.HEADERS, verify=False) as session:
-                url = f"https://www.copy-manga.com/api/v3/comic/{path_word}/group/default/chapters?limit=500"
+                url = f"https://www.mangacopy.com/api/v3/comic/{path_word}/group/default/chapters?limit=500"
                 response = await session.get(url)
 
                 if response.status_code == 200:
@@ -298,7 +298,7 @@ class CopyCrawler(BaseCrawler):
         """
         try:
             async with AsyncSession(proxies=self.PROXIES, headers=self.HEADERS, verify=False) as session:
-                url = f"https://www.copy-manga.com/api/v3/comic/{path_word}/chapter/{uuid}?platform=1"
+                url = f"https://www.mangacopy.com/api/v3/comic/{path_word}/chapter/{uuid}?platform=1"
                 response = await session.get(url)
 
                 if response.status_code == 200:
@@ -342,7 +342,7 @@ class CopyCrawler(BaseCrawler):
         Returns:
             bool: 下载是否成功
         """
-        referer = f"https://www.copy-manga.com/comic/{path_word}/chapter/{uuid}"
+        referer = f"https://www.mangacopy.com/comic/{path_word}/chapter/{uuid}"
         headers = self.HEADERS.copy()
         headers["Referer"] = referer
 
